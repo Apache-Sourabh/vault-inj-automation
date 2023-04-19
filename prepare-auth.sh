@@ -4,10 +4,10 @@ VAULT_URL="localhost:8200"
 export VAULT_TOKEN="$1"
 VAULT_PATH=("vault-client" "keycloak-client" "grafana-client" "database")
 
-K8s_Token=""
-k8s_CA=""
+SA_Token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+SA_CA=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
 
-final_ca=$(echo "$k8s_CA" | awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' )
+SA_CERT=$(echo "$SA_CA" | awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' )
 
 
 
@@ -22,5 +22,5 @@ curl --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"type":"kub
 
 curl --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --request POST --data '{ "bound_service_account_names": "vault-auth", "bound_service_account_namespaces": "default","policies": ["lila-acl-policy"]}' $VAULT_PROTOCOL://$VAULT_URL/v1/auth/kubernetes/role/lila-role
 
-curl --header "X-Vault-Token: $VAULT_TOKEN" --request POST --data '{ "kubernetes_host": "http://kubernetes.default.svc.local", "kubernetes_ca_cert": "'"$K8s_Token"'", "pem_keys": "'"$final_ca"'"
+curl --header "X-Vault-Token: $VAULT_TOKEN" --request POST --data '{ "kubernetes_host": "http://kubernetes.default.svc.local", "kubernetes_ca_cert": "'"$SA_Token"'", "pem_keys": "'"$SA_CERT"'"
 }' $VAULT_PROTOCOL://$VAULT_URL/v1/auth/kubernetes/config

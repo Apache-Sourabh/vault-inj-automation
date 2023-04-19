@@ -52,6 +52,38 @@ TOKEN_VALIDATE=$(echo $TOKEN_LOOKUP | jq -r .data.display_name)
 
 
 
+prep_vault_auth () {
+
+    SA_Token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+    SA_CA=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
+
+    SA_CERT=$(echo "$SA_CA" | awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' )
+
+
+    #create lila-acl policy
+    curl --request POST --header "X-Vault-Token: $VAULT_TOKEN" $VAULT_PROTOCOL://$VAULT_URL/v1/sys/policy/lila-acl-policy --data '{"policy":"path \"lila/'"*"'\" {\n capabilities = [\"list\",\"read\"]\n}"}'
+
+    #enable kubernetes auth (add condition)
+
+    k8s_auth_enabled=$(curl -s --request GET --header "X-Vault-Token:  hvs.DgPKvJIxf4vsNvrzCCsszyJW" --data '{"type":"kubernetes","description":"kubernetes auth"}'  http://vault.vault.svc.cluster.local:8200/v1/sys/auth/kubernetes  | jq -r .type)
+
+    if [ "$k8s_auth_enabled"  == "null" ]; then
+        curl --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"type":"kubernetes","description":"kubernetes auth"}'  $VAULT_PROTOCOL://$VAULT_URL/v1/sys/auth/kubernetes 
+    fi
+    
+    path=( $( printf '%s\n' "${VAULT_PATH[@]}" | grep -i "$1" ) )
+
+    #if [ ! -z "$path" ] && [ "$path" != "database" ]; then
+    #    Post_role=$(curl --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --request POST --data '{ "bound_service_account_names": "vault-auth", "bound_service_account_namespaces": "default","policies": ["lila-acl-policy"]}' $VAULT_PROTOCOL://$VAULT_URL/v1/auth/kubernetes/role/lila-role)
+    #elif [ ! -z "$path" ] && [ "$path" == "database" ]; then
+    #    Post_role=$(curl --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --request POST --data '{ "bound_service_account_names": "vault-auth", "bound_service_account_namespaces": "default","policies": ["lila-acl-policy"]}' $VAULT_PROTOCOL://$VAULT_URL/v1/auth/kubernetes/role/lila-role)
+    #fi
+
+    curl --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --request POST --data '{ "bound_service_account_names": "vault-auth", "bound_service_account_namespaces": "default","policies": ["lila-acl-policy"]}' $VAULT_PROTOCOL://$VAULT_URL/v1/auth/kubernetes/role/lila-role
+
+    curl --header "X-Vault-Token: $VAULT_TOKEN" --request POST --data '{ "kubernetes_host": "http://kubernetes.default.svc.local", "kubernetes_ca_cert": "'"$SA_Token"'", "pem_keys": "'"$SA_CERT"'" }' $VAULT_PROTOCOL://$VAULT_URL/v1/auth/kubernetes/config
+}
+
 #Function to POST data into vault
 post_vault_data () {
 
@@ -134,7 +166,7 @@ fetch_client_data () {
     
     fi
 
-    post_vault_data "$1"
+    prep_vault_auth "$1"
 
 }
 

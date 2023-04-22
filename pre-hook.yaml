@@ -1,36 +1,74 @@
 apiVersion: v1
-kind: Pod
+kind: Secret
 metadata:
-  name: "preinstall-hook"
+  name: vault-pod-secret
+type: Opaque
+data:
+  KEYCLOAK_ADMIN_USERNAME: dXNlcgo=
+  KEYCLOAK_ADMIN_PASSWORD: YWRtaW4K
+  VAULT_ROOT_TOKEN: aHZzLkRnUEt2Skl4ZjR2c052cnpDQ3NzenlKVwo=
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-sa
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: vault-sa-token
   namespace: default
   annotations:
-    "helm.sh/hook": "pre-install"
+    kubernetes.io/service-account.name: "vault-sa"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+# This cluster role binding allows anyone in the "manager" group to read secrets in any namespace.
+kind: ClusterRoleBinding
+metadata:
+  name: vault-sa-binding
+subjects:
+- kind: ServiceAccount
+  name: vault-sa
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: system:auth-delegator
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "preinstall-hook-pod"
+  namespace: default
   labels:
-    name: myapp
+    name: preinstall-hook-pod
 spec:
-  serviceAccountName: ""
+  serviceAccountName: "vault-sa"
   containers:
-  - name: pre-install-container
-    image: alpine
+  - name: data-injector
+    image: apachesourabh/vault-hook-alpine:1
     imagePullPolicy: IfNotPresent
-    command: ["bash", "./script.sh $KC_ADMIN_USERNAME $KC_ADMIN_PASSWORD $VAULT_ROOT_TOKEN" ]
+    command: ["bash"]
+    args: ["./update-vault.sh"]
     env:
     - name: APP_NAME
-      value: HELM-INCLUDE-FUNC
+      value: grafana
     - name: KEYCLOAK_ADMIN_USERNAME
       valueFrom:
         secretKeyRef:
-          name: secret_name
+          name: vault-pod-secret
           key: KEYCLOAK_ADMIN_USERNAME
     - name: KEYCLOAK_ADMIN_PASSWORD
       valueFrom:
         secretKeyRef:
-          name: secret_name
+          name: vault-pod-secret
           key: KEYCLOAK_ADMIN_PASSWORD
     - name: VAULT_ROOT_TOKEN
       valueFrom:
         secretKeyRef:
-          name: secret_name
+          name: vault-pod-secret
           key: VAULT_ROOT_TOKEN
   restartPolicy: Never
   terminationGracePeriodSeconds: 0

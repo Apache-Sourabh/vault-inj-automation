@@ -6,27 +6,30 @@
 #Keycloak input details
 #---------------------#
 KEYCLOAK_PROTOCOL="http"
-KEYCLOAK_URL="localhost:8080" 
-export KEYCLOAK_ADMIN_USERNAME="$1"
-export KEYCLOAK_ADMIN_PASSWORD="$2"
+KEYCLOAK_URL="keycloak.vault" 
+#export KEYCLOAK_ADMIN_USERNAME="$1"
+#export KEYCLOAK_ADMIN_PASSWORD="$2"
+KC_ADMIN_USERNAME=$(echo $KEYCLOAK_ADMIN_USERNAME)                                                                                                                              
+KC_ADMIN_PASSWORD=$(echo $KEYCLOAK_ADMIN_PASSWORD)
 KEYCLOAK_REALMS="Livinglab"
 KEYCLOAK_CLIENT_NAMES=("argo" "grafana-oauth" "hashicorpvault" "kubeapps")
 #---------------------#
 #Vault input details
 #---------------------#
 VAULT_PROTOCOL="http"
-VAULT_URL="localhost:8200"
-export VAULT_TOKEN="$3"
+VAULT_URL="vault.vault:8200"
+VAULT_TOKEN=$(echo $VAULT_ROOT_TOKEN)
+#export VAULT_TOKEN="$3"
 APP_NAME="argo"
 #---------------------#
 
-    if [ $# -lt 3 ]; then
-        echo "####################################################" 
-        echo "One or more argument is missing."
-        echo 'script execution: "sh update-vault.sh <keycloak-admin-username> <keycloak-admin-password> <vault-root-token>"'
-        echo "####################################################"
-        exit
-    fi
+#    if [ $# -lt 3 ]; then
+#        echo "####################################################" 
+#        echo "One or more argument is missing."
+#        echo 'script execution: "sh update-vault.sh <keycloak-admin-username> <keycloak-admin-password> <vault-root-token>"'
+#        echo "####################################################"
+#        exit
+#    fi
 
     unseal_status=$(curl -s $VAULT_PROTOCOL://$VAULT_URL/v1/sys/seal-status | jq -r .sealed)
 
@@ -70,8 +73,11 @@ fetch_client_data () {
     echo "####################################################"
     echo ""
 
-    Token_data=$(curl -s --fail $KEYCLOAK_PROTOCOL://$KEYCLOAK_URL/realms/master/protocol/openid-connect/token -H 'Content-Type: application/x-www-form-urlencoded' -d "grant_type=password&username=$KEYCLOAK_ADMIN_USERNAME&password=$KEYCLOAK_ADMIN_PASSWORD&client_id=admin-cli")
+    #Token_data=$(curl -s --fail $KEYCLOAK_PROTOCOL://$KEYCLOAK_URL/realms/master/protocol/openid-connect/token -H 'Content-Type: application/x-www-form-urlencoded' -d "grant_type=password&username=$KC_ADMIN_USERNAME&password=$KC_ADMIN_PASSWORD&client_id=admin-cli")
     
+
+    Token_data=$(curl -s --fail $KEYCLOAK_PROTOCOL://$KEYCLOAK_URL/realms/master/protocol/openid-connect/token -H 'Content-Type: application/x-www-form-urlencoded' -d 'client_id=admin-cli' -d "username="$KC_ADMIN_USERNAME"" -d "password="$KC_ADMIN_PASSWORD"" -d 'grant_type=password')
+
     if [ $? -eq 0 ]; then
         echo "####################################################"
         echo "*** Bearer token successfully fetched ***"
@@ -136,11 +142,11 @@ fetch_client_data () {
 
 prep_vault_auth () {
 
-    SA_Token=$(cat ./token)
-    SA_CA=$( cat ./ca.crt)
+    #SA_Token=$(cat ./token)
+    #SA_CA=$( cat ./ca.crt)
 
-    #SA_Token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-    #SA_CA=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
+    SA_Token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+    SA_CA=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
 
     SA_CERT=$(echo "$SA_CA" | awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' )
 

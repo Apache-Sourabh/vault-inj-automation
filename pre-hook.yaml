@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "preinstall-hook"
+  namespace: default
+  annotations:
+    "helm.sh/hook": "pre-install"
+  labels:
+    name: myapp
+spec:
+  serviceAccountName: ""
+  containers:
+  - name: pre-install-container
+    image: alpine
+    imagePullPolicy: IfNotPresent
+    command: ["bash", "./script.sh $KC_ADMIN_USERNAME $KC_ADMIN_PASSWORD $VAULT_ROOT_TOKEN" ]
+    env:
+    - name: APP_NAME
+      value: HELM-INCLUDE-FUNC
+    - name: KEYCLOAK_ADMIN_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: secret_name
+          key: KEYCLOAK_ADMIN_USERNAME
+    - name: KEYCLOAK_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: secret_name
+          key: KEYCLOAK_ADMIN_PASSWORD
+    - name: VAULT_ROOT_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: secret_name
+          key: VAULT_ROOT_TOKEN
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 0

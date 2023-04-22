@@ -101,7 +101,6 @@ fetch_client_data () {
 
 
     client_check=( $( printf '%s\n' "${KEYCLOAK_CLIENT_NAMES[@]}" | grep -i "$APP_NAME" ) )
-    echo $client_check
     if [ ! -z "$client_check" ]; then
         client_id=$(echo $clients | jq -r --arg kc ${client_check} '.[] | select(.clientId==$kc) | .id' )
         
@@ -155,7 +154,7 @@ prep_vault_auth () {
         echo ""
     else
         echo "####################################################"
-        echo "*** lila-vault-policy alread exists ***"
+        echo "*** lila-vault-policy already exists ***"
         echo "####################################################"
         echo ""
     fi
@@ -171,7 +170,7 @@ prep_vault_auth () {
         echo ""
     else
         echo "####################################################"
-        echo "*** kubernetes auth alread exists ***"
+        echo "*** kubernetes auth already exists ***"
         echo "####################################################"
         echo ""
     fi
@@ -187,7 +186,7 @@ prep_vault_auth () {
         echo ""
     else
         echo "####################################################"
-        echo "*** lila-vault-role alread exists ***"
+        echo "*** lila-vault-role already exists ***"
         echo "####################################################"
         echo ""
     fi
@@ -203,7 +202,7 @@ prep_vault_auth () {
         echo ""
     else
         echo "####################################################"
-        echo "*** kubernetes auth alread exists ***"
+        echo "*** kubernetes auth already exists ***"
         echo "####################################################"
         echo ""
     fi
@@ -226,7 +225,7 @@ post_vault_data () {
         echo ""
     else
         echo "####################################################"
-        echo "*** KV2 secret alread exists ***"
+        echo "*** KV2 secret already exists ***"
         echo "####################################################"
         echo ""
     fi
@@ -234,9 +233,12 @@ post_vault_data () {
 
    #####POST DATA INTO SUB-PATH######
 
+    
    if [[ "$APP_NAME" == *"argo"* ]]; then
-        #argo_data_exists=$(curl -s --request GET --header "X-Vault-Token: $VAULT_TOKEN" $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/argocd/argocd-oidc-secret| jq -r '.data[].client_id' )
-        if [ "$argo_data_exists" == "null" ]; then
+        
+        path_list=$(curl -s --request GET --header "X-Vault-Token: $VAULT_TOKEN" $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/metadata/?list=true | jq -r '.data.keys' | jq -r .[] | grep -i "$APP_NAME")
+
+        if [[ -z $path_list  ]]; then
             curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"client_id":"'"$client_check"'","client_secret":"'"$client_secret"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/argocd/argocd-oidc-secret
             curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"client_id":"'"$client_check"'","client_secret":"'"$client_secret"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/argocd/argocd-vault-secret
             echo "####################################################"
@@ -244,7 +246,7 @@ post_vault_data () {
             echo "####################################################"
             echo ""
         fi
-    elif [[ "$APP_NAME" == *"grafana"* ]]; then
+   elif [[ "$APP_NAME" == *"grafana"* ]]; then
         curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"client_id":"'"$client_check"'","client_secret":"'"$client_secret"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/grafana
         echo "####################################################"
         echo "*** Added ARGO Grafana into vault ***"

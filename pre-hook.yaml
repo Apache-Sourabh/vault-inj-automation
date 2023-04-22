@@ -42,6 +42,8 @@ kind: Pod
 metadata:
   name: "preinstall-hook-pod"
   namespace: default
+  annotations:
+    "helm.sh/hook": "pre-install"
   labels:
     name: preinstall-hook-pod
 spec:

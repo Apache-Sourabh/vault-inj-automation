@@ -245,8 +245,10 @@ post_vault_data () {
         path_list=$(curl -s --request GET --header "X-Vault-Token: $VAULT_TOKEN" $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/metadata/?list=true | jq -r '.data.keys' | jq -r .[] | grep -i "$APP_NAME")
 
         if [[ -z $path_list  ]]; then
-            curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"client_id":"'"$client_check"'","client_secret":"'"$client_secret"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/argocd/argocd-oidc-secret
-            curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"client_id":"'"$client_check"'","client_secret":"'"$client_secret"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/argocd/argocd-vault-secret
+            clearPassword=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
+            bcrpytPassword=$(htpasswd -nbBC 10 "" "$clearPassword" | tr -d ':\n' | sed 's/$2y/$2a/')
+            curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"clearPassword":"'"$clearPassword"'","oidc.auth0.clientSecret":"'"$client_secret"'","admin.password":"'"$bcrpytPassword"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/argocd/argocd-oidc-secret
+            curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"oidc-kc-root-ca.crt":""}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/argocd/argocd-vault-secret
             echo "####################################################"
             echo "*** Added ARGO Data into vault ***"
             echo "####################################################"

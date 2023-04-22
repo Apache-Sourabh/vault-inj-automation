@@ -247,17 +247,27 @@ post_vault_data () {
             echo ""
         fi
    elif [[ "$APP_NAME" == *"grafana"* ]]; then
-        curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"client_id":"'"$client_check"'","client_secret":"'"$client_secret"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/grafana
-        echo "####################################################"
-        echo "*** Added ARGO Grafana into vault ***"
-        echo "####################################################"
-        echo ""
+
+        path_list=$(curl -s --request GET --header "X-Vault-Token: $VAULT_TOKEN" $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/metadata/?list=true | jq -r '.data.keys' | jq -r .[] | grep -i "$APP_NAME")
+
+        if [[ -z $path_list  ]]; then
+            curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"client_id":"'"$client_check"'","client_secret":"'"$client_secret"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/grafana
+            echo "####################################################"
+            echo "*** Added GRAFANA into vault ***"
+            echo "####################################################"
+            echo ""
+        fi
+
     elif [[ "$APP_NAME" == *"kubeapps"* ]]; then
-        curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"client_id":"'"$client_check"'","client_secret":"'"$client_secret"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/kubeapps/keycloak-secret  
-        echo "####################################################"
-        echo "*** Added ARGO Data into vault ***"
-        echo "####################################################"
-        echo ""
+        path_list=$(curl -s --request GET --header "X-Vault-Token: $VAULT_TOKEN" $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/metadata/?list=true | jq -r '.data.keys' | jq -r .[] | grep -i "$APP_NAME")
+
+        if [[ -z $path_list  ]]; then
+            curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"client_id":"'"$client_check"'","client_secret":"'"$client_secret"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/kubeapps/keycloak-secret  
+            echo "####################################################"
+            echo "*** Added KUBEAPPS Data into vault ***"
+            echo "####################################################"
+            echo ""
+        fi
     fi
 
 }

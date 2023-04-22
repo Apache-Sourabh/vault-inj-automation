@@ -266,11 +266,13 @@ post_vault_data () {
             echo ""
         fi
 
-    elif [[ "$APP_NAME" == *"kubeapps"* ]]; then
+    elif [[ "$APP_NAME" == *"keycloak"* ]]; then
         path_list=$(curl -s --request GET --header "X-Vault-Token: $VAULT_TOKEN" $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/metadata/?list=true | jq -r '.data.keys' | jq -r .[] | grep -i "$APP_NAME")
 
         if [[ -z $path_list  ]]; then
-            curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"client_id":"'"$client_check"'","client_secret":"'"$client_secret"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/kubeapps/keycloak-secret  
+            KCPassword=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
+            PGPassword=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
+            curl -s -o /dev/null --request POST --header "X-Vault-Token:  $VAULT_TOKEN" --data '{"data":{"admin-password":"'"$KCPassword"'","management-password":"'"$KCPassword"'","password":"'"$PGPassword"'","postgres-password":"'"$PGPassword"'"}}' $VAULT_PROTOCOL://$VAULT_URL/v1/livinglab/data/keycloak/keycloak-secret  
             echo "####################################################"
             echo "*** Added KUBEAPPS Data into vault ***"
             echo "####################################################"

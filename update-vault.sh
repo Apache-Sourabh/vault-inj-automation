@@ -17,7 +17,6 @@ KEYCLOAK_CLIENT_NAMES=("argo" "grafana-oauth" "hashicorpvault" "kubeapps")
 VAULT_PROTOCOL="http"
 VAULT_URL="vault.vault:8200"
 VAULT_TOKEN=$(echo $VAULT_ROOT_TOKEN)
-APP_NAME="argo"
 #---------------------#
 
     unseal_status=$(curl -s $VAULT_PROTOCOL://$VAULT_URL/v1/sys/seal-status | jq -r .sealed)

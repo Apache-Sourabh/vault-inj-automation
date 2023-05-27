@@ -1,0 +1,40 @@
+# Vault values
+server:
+  extraEnvironmentVars:
+    VAULT_DEV_ROOT_TOKEN_ID: "root-token"
+  standalone:
+    enabled: true
+    ha:
+      enabled: false
+  ingress:
+    enabled: true
+    hosts:
+      - host: vault.example.com
+        paths:
+          - /
+
+# Keycloak values
+replicaCount: 1
+ingress:
+  enabled: true
+  hosts:
+    - host: keycloak.example.com
+      paths:
+        - /
+  tls:
+    enabled: false
+  annotations: {}
+  labels: {}
+service:
+  type: ClusterIP
+  annotations: {}
+  labels: {}
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: https

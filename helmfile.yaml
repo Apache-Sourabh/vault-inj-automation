@@ -1,0 +1,31 @@
+repositories:
+  - name: hashicorp
+    url: https://helm.releases.hashicorp.com
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+helmDefaults:
+  wait: true
+
+releases:
+  - name: vault
+    namespace: vault
+    chart: hashicorp/vault
+    version: 0.15.0
+    values:
+      - values.yaml
+
+  - name: bash-script
+    namespace: default
+    chart: ./bash-script-chart
+    values:
+      - values.yaml
+
+  - name: keycloak
+    namespace: keycloak
+    chart: bitnami/keycloak
+    version: 15.0.1
+    values:
+      - values.yaml
+
+  
